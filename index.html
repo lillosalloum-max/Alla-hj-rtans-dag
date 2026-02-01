@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Alla hjärtans dag 💘</title>
+  <style>
+    :root{
+      --pink1:#ff6fa3;
+      --pink2:#ffd1e1;
+      --card: rgba(255,255,255,.80);
+      --txt:#1f1f1f;
+      --shadow: 0 18px 60px rgba(0,0,0,.18);
+    }
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--txt);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,.45) 0 18%, transparent 19%),
+        radial-gradient(circle at 80% 10%, rgba(255,255,255,.35) 0 16%, transparent 17%),
+        linear-gradient(135deg, var(--pink1), var(--pink2));
+      overflow:hidden;
+    }
+
+    /* Gulliga dekorationer i bakgrunden */
+    .decor{
+      position: fixed;
+      inset: 0;
+      pointer-events:none;
+      overflow:hidden;
+      z-index: 0;
+    }
+    .floaty{
+      position:absolute;
+      font-size: 34px;
+      opacity:.35;
+      animation: floatUp 9s linear infinite;
+      filter: drop-shadow(0 10px 12px rgba(0,0,0,.08));
+    }
+    @keyframes floatUp{
+      from{ transform: translateY(110vh) rotate(0deg); opacity:0; }
+      10%{ opacity:.35; }
+      to  { transform: translateY(-30vh) rotate(14deg); opacity:0; }
+    }
+
+    .corners{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index: 0;
+    }
+    .corner{
+      position:absolute;
+      font-size: 56px;
+      opacity:.25;
+      filter: drop-shadow(0 16px 18px rgba(0,0,0,.08));
+    }
+    .tl{ top:14px; left:14px; }
+    .tr{ top:14px; right:14px; }
+    .bl{ bottom:14px; left:14px; }
+    .br{ bottom:14px; right:14px; }
+
+    canvas{ position:fixed; inset:0; pointer-events:none; z-index: 10; }
+
+    .card{
+      width:min(680px, 92vw);
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.65);
+      border-radius: 26px;
+      padding: 28px 22px 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      text-align:center;
+      position:relative;
+      z-index: 2;
+    }
+
+    h1{
+      margin: 0 0 10px;
+      font-size: clamp(24px, 4.2vw, 36px);
+      letter-spacing: .2px;
+    }
+    .sub{
+      margin: 0 0 18px;
+      font-size: 16px;
+      opacity:.9;
+    }
+
+    /* Viktigt: knapparna är bredvid varandra (ingen överlapp) */
+    .btnArea{
+      position: relative;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap: 16px;
+      margin-top: 8px;
+      padding: 12px 8px;
+      min-height: 78px;
+    }
+
+    button{
+      border:0;
+      border-radius: 999px;
+      padding: 14px 20px;
+      font-size: 16px;
+      cursor:pointer;
+      box-shadow: 0 12px 24px rgba(0,0,0,.12);
+      transition: transform .08s ease;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+      min-width: 150px;
+      position: relative;
+    }
+    button:active{ transform: scale(.98); }
+
+    #yesBtn{
+      background:#ff2e6f;
+      color:white;
+    }
+
+    #noBtn{
+      background:white;
+      color:#444;
+      border: 1px solid rgba(0,0,0,.06);
+    }
+
+    .result{
+      display:none;
+      margin-top: 16px;
+      animation: pop .35s ease both;
+    }
+    @keyframes pop{ from{ transform: translateY(10px); opacity:0;} to{ transform: translateY(0); opacity:1;} }
+
+    .pic{
+      width: min(460px, 92%);
+      border-radius: 18px;
+      margin: 14px auto 0;
+      box-shadow: 0 14px 30px rgba(0,0,0,.16);
+      border: 4px solid rgba(255,255,255,.75);
+      display:block;
+    }
+
+    .tiny{ margin-top: 10px; font-size: 13px; opacity:.75; }
+
+    /* Overlay för NEJ första gången */
+    .overlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      place-items:center;
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+      z-index: 50;
+      padding: 18px;
+    }
+    .modal{
+      width: min(560px, 92vw);
+      background: rgba(255,255,255,.94);
+      border-radius: 24px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.28);
+      padding: 20px 18px 18px;
+      border: 1px solid rgba(0,0,0,.06);
+      text-align:center;
+      animation: pop .2s ease both;
+    }
+    .modal h2{
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+    .modal p{
+      margin: 0 0 12px;
+      opacity:.85;
+    }
+    .modal img{
+      width: min(420px, 92%);
+      border-radius: 16px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.18);
+      border: 3px solid rgba(255,255,255,.85);
+    }
+/* Gullig, diskret puls på JA-knappen */
+#yesBtn{
+  animation: yesPulse 2.6s ease-in-out infinite;
+}
+
+@keyframes yesPulse {
+  0%, 100% { transform: scale(1); }
+  45%      { transform: scale(1); }
+  55%      { transform: scale(1.085); } /* större slag */
+  65%      { transform: scale(1); }
+  75%      { transform: scale(1.045); } /* liten efterpuls */
+  85%      { transform: scale(1); }
+}
+
+
+/* Om användaren föredrar mindre rörelse */
+@media (prefers-reduced-motion: reduce){
+  #yesBtn{ animation: none; }
+}
+
+  </style>
+</head>
+
+<body>
+  <!-- Bakgrundsdekor -->
+  <div class="decor" id="decor"></div>
+  <div class="corners">
+    <div class="corner tl">🧸💗</div>
+    <div class="corner tr">🎈💖</div>
+    <div class="corner bl">💞🧸</div>
+    <div class="corner br">🎀💘</div>
+  </div>
+
+  <!-- Hjärt-konfetti -->
+  <canvas id="confetti"></canvas>
+
+  <!-- Ljud -->
+  <audio id="noSound" src="no.mp3" preload="auto"></audio>
+  <audio id="yesSound" src="yes.mp3" preload="auto"></audio>
+<audio id="bgMusic" src="romantic.mp3" preload="auto" loop></audio>
+
+
+  <!-- NEJ overlay -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2>Fyfan för dig 😭</h2>
+      <p>Jag vill att du ska välja igen.. 😢</p>
+      <img src="skull.gif" alt="fyfan-bild" />
+      <div class="tiny"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h1 id="question">Marina, vill du bli min alla hjärtans dag-dejt? 💘</h1>
+    <p class="sub" id="subtitle">Välj klokt… 😇🧸🎈</p>
+
+    <div class="btnArea" id="btnArea">
+      <button id="yesBtn">JA 😍</button>
+      <button id="noBtn">NEJ 🙈</button>
+    </div>
+
+    <div class="result" id="result">
+      <h2 style="margin:0 0 8px; font-size:30px;">JAAAAA, mohahahah 😈💖</h2>
+      <p style="margin:0; font-size:16px; opacity:.9;">Jag fick som jag ville. 😌</p>
+
+      <img class="pic" src="oss.jpg" alt="" />
+      <div class="tiny">Jag älskar dig 🧸💗</div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Dekor (nallar, ballonger, hjärtan) ----------
+    const decor = document.getElementById('decor');
+    const decoEmojis = ["🎈","💗","💖","💘","💞","🧸","🎀","🎈","💖","🧸"];
+    for(let i=0;i<22;i++){
+      const el = document.createElement('div');
+      el.className = 'floaty';
+      el.textContent = decoEmojis[Math.floor(Math.random()*decoEmojis.length)];
+      el.style.left = (Math.random()*100) + 'vw';
+      el.style.fontSize = (22 + Math.random()*30) + 'px';
+      el.style.animationDuration = (6 + Math.random()*8) + 's';
+      el.style.animationDelay = (Math.random()*4) + 's';
+      decor.appendChild(el);
+    }
+
+    // ---------- Element ----------
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn  = document.getElementById('noBtn');
+    const btnArea = document.getElementById('btnArea');
+    const result = document.getElementById('result');
+    const question = document.getElementById('question');
+    const subtitle = document.getElementById('subtitle');
+    const overlay = document.getElementById('overlay');
+
+    const noSound = document.getElementById('noSound');
+    const yesSound = document.getElementById('yesSound');
+const bgMusic = document.getElementById('bgMusic');
+if(bgMusic) bgMusic.volume = 0.35;  // sänk/öka om du vill
+
+let bgStarted = false;
+
+async function startBgMusic() {
+  if(!bgMusic || bgStarted) return;
+  bgStarted = true;
+  try{
+    bgMusic.currentTime = 0;
+    await bgMusic.play(); // kan blockeras av webbläsaren
+  }catch{
+    // Om autoplay blockeras, vi försöker igen vid första klick
+    bgStarted = false;
+  }
+}
+
+function stopBgMusic() {
+  if(!bgMusic) return;
+  try{
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+  }catch{}
+}
+
+// Försök starta direkt när sidan laddar
+window.addEventListener('load', () => {
+  startBgMusic();
+});
+
+// Om autoplay blockeras: starta vid första interaktion (klick/touch) på sidan
+document.addEventListener('pointerdown', () => {
+  startBgMusic();
+});
+
+
+    // Lite volym (ändra om du vill)
+    noSound.volume = 0.9;
+    yesSound.volume = 0.95;
+
+    function playSound(aud){
+      if(!aud) return;
+      try{
+        aud.currentTime = 0;
+        const p = aud.play();
+        if(p && typeof p.catch === "function") p.catch(()=>{});
+      }catch{}
+    }
+
+    // ---------- NEJ-logik ----------
+    let noHasBeenClickedOnce = false;
+    let noDodgeMode = false;
+
+    function moveNoTo(x, y){
+      // gör knappen absolut placerad när dodge-mode aktiveras
+      if(noBtn.style.position !== 'absolute'){
+        noBtn.style.position = 'absolute';
+
+        // behåll storleken så layout inte hoppar
+        noBtn.style.width = getComputedStyle(noBtn).width;
+
+        // ta bort den från flex-flödet visuellt
+        // (JA ligger kvar i mitten, NEJ börjar springa)
+      }
+
+      const area = btnArea.getBoundingClientRect();
+      const btn = noBtn.getBoundingClientRect();
+      const pad = 8;
+
+      const minX = pad;
+      const minY = pad;
+      const maxX = area.width - btn.width - pad;
+      const maxY = area.height - btn.height - pad;
+
+      const clampedX = Math.max(minX, Math.min(x, maxX));
+      const clampedY = Math.max(minY, Math.min(y, maxY));
+
+      noBtn.style.left = clampedX + "px";
+      noBtn.style.top  = clampedY + "px";
+    }
+
+    function moveNoRandom(){
+      const area = btnArea.getBoundingClientRect();
+      // när vi gör absolut, coords är inom btnArea
+      const x = Math.random() * (area.width  - 160) + 8;
+      const y = Math.random() * (area.height - 54) + 8;
+      moveNoTo(x, y);
+    }
+
+    function dodgeIfNear(pointerX, pointerY){
+      if(!noDodgeMode) return;
+
+      const btn = noBtn.getBoundingClientRect();
+      const cx = btn.left + btn.width/2;
+      const cy = btn.top  + btn.height/2;
+      const dx = pointerX - cx;
+      const dy = pointerY - cy;
+      const dist = Math.hypot(dx, dy);
+
+      const dangerRadius = 170; // aggressivare = svårare
+
+      if(dist < dangerRadius){
+        moveNoRandom();
+      }
+    }
+
+    document.addEventListener('mousemove', (e) => {
+      dodgeIfNear(e.clientX, e.clientY);
+    });
+
+    noBtn.addEventListener('touchstart', (e) => {
+      if(!noDodgeMode) return;
+      e.preventDefault();
+      moveNoRandom();
+    }, {passive:false});
+
+    noBtn.addEventListener('click', (e) => {
+      // I dodge-mode: bara flytta och ignorera klick
+      if(noDodgeMode){
+        e.preventDefault();
+        moveNoRandom();
+        return;
+      }
+
+      // Första klicket: overlay + ljud 5 sek, sen dodge-mode
+      if(!noHasBeenClickedOnce){
+        noHasBeenClickedOnce = true;
+        playSound(noSound);
+        overlay.style.display = 'grid';
+
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          noDodgeMode = true;
+          moveNoRandom();
+        }, 5000);
+      }
+    });
+
+    // ---------- MASSIV hjärt-konfetti (STOR + TYDLIG) ----------
+const canvas = document.getElementById('confetti');
+const ctx = canvas.getContext('2d');
+
+let dpr = window.devicePixelRatio || 1;
+
+function resize(){
+  dpr = window.devicePixelRatio || 1;
+  canvas.width  = Math.floor(innerWidth * dpr);
+  canvas.height = Math.floor(innerHeight * dpr);
+  canvas.style.width  = innerWidth + "px";
+  canvas.style.height = innerHeight + "px";
+  // Rita i "vanliga" skärmpixlar men med skarp canvas
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+// sizePx = hjärtats storlek i pixlar (typ 18–45)
+function drawHeart(x, y, sizePx, rot){
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.scale(sizePx, sizePx);
+
+  ctx.beginPath();
+  ctx.moveTo(0, 0.35);
+  ctx.bezierCurveTo(0, -0.1, -0.5, -0.1, -0.5, 0.25);
+  ctx.bezierCurveTo(-0.5, 0.55, -0.15, 0.82, 0, 0.98);
+  ctx.bezierCurveTo(0.15, 0.82, 0.5, 0.55, 0.5, 0.25);
+  ctx.bezierCurveTo(0.5, -0.1, 0, -0.1, 0, 0.35);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function fireMassiveHeartConfetti(){
+  const N = 1600;        // MASSVIS
+  const DURATION = 780;  // längre tid
+
+  const hearts = [];
+  for(let i=0;i<N;i++){
+    hearts.push({
+      x: Math.random() * innerWidth,
+      y: -80 - Math.random() * innerHeight * 0.9,
+      vx: -3.2 + Math.random() * 6.4,
+      vy:  2.2 + Math.random() * 9.0,
+      rot: Math.random() * Math.PI * 2,
+      vr: -0.18 + Math.random() * 0.36,
+      size: 18 + Math.random() * 30, // 18–48px (tydligt!)
+      hue: 328 + Math.random() * 28,
+      alpha: 1
+    });
+  }
+
+  let frame = 0;
+  function step(){
+    frame++;
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+    for(const h of hearts){
+      h.x += h.vx;
+      h.y += h.vy;
+      h.rot += h.vr;
+
+      // lite svaj i sidled
+      h.vx += Math.sin((h.y + frame) * 0.01) * 0.02;
+      h.vy += 0.045; // gravitation
+
+      h.alpha = Math.max(0, 1 - (h.y / (innerHeight * 1.05)));
+
+      ctx.globalAlpha = h.alpha;
+      ctx.fillStyle = `hsl(${h.hue} 92% 62%)`;
+      drawHeart(h.x, h.y, h.size, h.rot);
+    }
+
+    ctx.globalAlpha = 1;
+
+    if(frame < DURATION) requestAnimationFrame(step);
+    else ctx.clearRect(0, 0, innerWidth, innerHeight);
+  }
+  step();
+}
+
+
+    // ---------- JA ----------
+    yesBtn.addEventListener('click', () => {
+      playSound(yesSound);
+
+      question.style.display = 'none';
+      subtitle.style.display = 'none';
+      btnArea.style.display = 'none';
+      result.style.display = 'block';
+
+      fireMassiveHeartConfetti();
+ // konfetti ska synas tydligt
+    });
+  </script>
+</body>
+</html>
